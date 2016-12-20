@@ -1,0 +1,54 @@
+---
+- assert:
+    that: ansible_version.major == 2
+    msg: "This playbook is for Ansible version 2"
+
+- block:
+    - name: check nodesource yum source is installed
+      stat:
+        path: /etc/yum.repos.d/nodesource-el.repo
+      register: nodesource_yum
+
+    - name: nodesource yum source
+      get_url:
+        url: https://rpm.nodesource.com/setup_6.x
+        dest: /tmp/setup_6.x
+        mode: 0777
+      when: nodesource_yum.stat.exists == False
+
+    - name: run nodesource installer
+      shell: /tmp/setup_6.x
+      when: nodesource_yum.stat.exists == False
+
+    - name: yum | install nodejs
+      yum:
+        name: nodejs
+        state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+  tags:
+    - nodejs_install-packages
+
+- block:
+    - name: check nodesource apt source is installed
+      stat:
+        path: /etc/apt/sources.list.d/nodesource.list
+      register: nodesource_apt
+
+    - name: nodesource apt source installer
+      get_url:
+        url: https://deb.nodesource.com/setup_6.x
+        dest: /tmp/setup_6.x
+        mode: 0777
+      when: nodesource_apt.stat.exists == False
+
+    - name: run nodesource installer
+      shell: /tmp/setup_6.x
+      when: nodesource_apt.stat.exists == False
+
+    - name: apt | install nodejs
+      apt:
+        name: nodejs
+        state: present
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+  tags:
+    - nodejs_install-packages
